@@ -17,9 +17,9 @@ def decision(direction, currentVelocity, targetVelocity, B):
 
 # pitch, yaw and forward displacement in time step dt is converted to cartesian coordinates
 def cartesian(dtDisplacement):
-    x = math.cos(dtDisplacement[0]) * math.cos(dtDisplacement[1]) * dtDisplacement[2]
-    y = math.cos(dtDisplacement[0]) * math.sin(dtDisplacement[1]) * dtDisplacement[2]
-    z = math.sin(dtDisplacement[0]) * dtDisplacement[2]
+    z = math.sqrt(dtDisplacement[2]**2 / (math.tan(dtDisplacement[1])**2 + math.tan(dtDisplacement[0])**2 +1))
+    x = math.tan(dtDisplacement[1])*z
+    y = math.tan(dtDisplacement[0])*z
     return x, y, z
 
 
@@ -43,12 +43,12 @@ def runsimulation():
     decision(1, currentVelocity, targetVelocity, B)
 
     # angular overshoot around target pitch and yaw rates at which pilots make decisions
-    overshoot = [0.001, 0.001]
+    overshoot = [0.1, 0.1]
 
-    thrust1 = np.array([0.001, 0.002, 0.06])
-    thrust2 = np.array([0.0015, -0.006, 0.02])
-    thrust3 = np.array([-0.002, 0.001, -0.03])
-    thrust4 = np.array([-0.002, -0.003, -0.02])
+    thrust1 = np.array([0.001, 0.002, 0.006])
+    thrust2 = np.array([0.0015, -0.006, 0.002])
+    thrust3 = np.array([-0.002, 0.001, -0.003])
+    thrust4 = np.array([-0.002, -0.003, -0.002])
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
@@ -90,7 +90,7 @@ def runsimulation():
     ax2d[0].legend(("Pitch rate", "Yaw rate", "Forward speed"), loc="upper right")
     ax2d[0].set_title('Velocity')
     ax2d[1].plot(time, displacement)
-    ax2d[1].legend(("Pitch", "Yaw", "Forward displacement"), loc="upper right")
+    ax2d[1].legend(("x", "y", "z"), loc="upper right")
     ax2d[1].set_title('Displacement')
 
     fig2 = plt.figure()

@@ -7,11 +7,12 @@ from random import randint
 
 
 # individual pilot decision for thrust mode
-def decision(direction, currentVelocity, targetVelocity, B):
-    if currentVelocity[direction] <= targetVelocity[direction]:
-        B[direction] = False
-    else:
-        B[direction] = True
+def decision(direction, freq, decisionCounter, currentVelocity, targetVelocity, B):
+    if decisionCounter % freq == 0:
+        if currentVelocity[direction] <= targetVelocity[direction]:
+            B[direction] = False
+        else:
+            B[direction] = True
     return B
 
 
@@ -22,16 +23,18 @@ def cartesian(dtDisplacement):
     y = math.tan(dtDisplacement[0])*z
     return x, y, z
 
-
 # program runs for 'hours' number of hours in 'steps' number of steps of size 'dt'
 def runsimulation():
     hours = 200  # hours until landing
     dt = 0.1  # time step size (hours)
+    yawFreq = 10  # after yawFreq time steps, change yaw rate
+    pitchFreq = 9  # after pitchFreq time steps, change pitch rate
     steps = int(hours / dt)  # how many time steps occur
     targetVelocity = np.array([0, 0])  # desired pitch and yaw rates
     currentVelocity = np.array([0, 0, 0.5])  # * math.pi/10      # current pitch and yaw rates
     currentDisplacement = [0, 0, 0]  # initial displacement in cartesian form
     B = [False, False]
+    decisionCounter = 0
     time = [0]  # initial time
     timeIn = [0, 0, 0, 0]  # record time in each thruster mode ([(0,0), (0,1), (1,0), (1,1)])
     listCurrentVel = [currentVelocity]  # array of velocities
@@ -39,53 +42,20 @@ def runsimulation():
     xVals = [currentDisplacement[0]]
     yVals = [currentDisplacement[1]]
     zVals = [currentDisplacement[2]]
-    decision(0, currentVelocity, targetVelocity, B)  # pilots initial decisions
-    decision(1, currentVelocity, targetVelocity, B)
+    decision(0, pitchFreq, decisionCounter, currentVelocity, targetVelocity, B)  # pilots initial decisions
+    decision(1, yawFreq, decisionCounter, currentVelocity, targetVelocity, B)
 
-    # in order to allow pilots to make a decision a certain time after the pitch or yaw rates go above/below the target
-    # values, need to have their individual time delays, keep track of when the target value is crossed (change of sign
-    # in the subtraction) as well as establish a counter to keep track of delay
-    timeDelay = [10, 10]
-    pitchRateSign = np.sign(targetVelocity[0] - currentVelocity[0])
-    yawRateSign = np.sign(targetVelocity[1] - currentVelocity[1])
-    overshoot = [0, 0]
-    pitchRateSignChange = False
-    yawRateSignChange = False
-
-    thrust1 = np.array([0.001, 0.002, 0.06])
-    thrust2 = np.array([0.0015, -0.006, 0.02])
-    thrust3 = np.array([-0.002, 0.001, -0.03])
-    thrust4 = np.array([-0.002, -0.003, -0.02])
+    thrust1 = np.array([0.001, 0.002, 0.0006])
+    thrust2 = np.array([0.0015, -0.006, 0.0002])
+    thrust3 = np.array([-0.002, 0.001, -0.0003])
+    thrust4 = np.array([-0.002, -0.003, -0.0002])
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
-
-        # update info on whether the threshold has been crossed by comparing old iterations data to new
-        oldPitchRateSign = pitchRateSign
-        oldYawRateSign = yawRateSign
-        pitchRateSign = np.sign(targetVelocity[0] - currentVelocity[0])
-        yawRateSign = np.sign(targetVelocity[1] - currentVelocity[1])
-
-        # once a threshold is crossed, allow the overshoot counter to begin
-        if pitchRateSign != oldPitchRateSign:
-            pitchRateSignChange = True
-        if yawRateSign != oldYawRateSign:
-            yawRateSignChange = True
-
-        if yawRateSignChange:
-            overshoot[1] += 1
-        if pitchRateSignChange:
-            overshoot[0] += 1
-
-        # once the overshoot counter reaches the assigned time delays for each pilot, allow them to make their decisions
-        if overshoot[0] == timeDelay[0]:
-            B = decision(0, currentVelocity, targetVelocity, B)
-            pitchRateSignChange = False
-            overshoot[0] = 0
-        if overshoot[1] == timeDelay[1]:
-            B = decision(1, currentVelocity, targetVelocity, B)
-            yawRateSignChange = False
-            overshoot[1] = 0
+        decisionCounter += 1
+        # decision function determines when pilots make decision
+        decision(0, pitchFreq, decisionCounter, currentVelocity, targetVelocity, B)
+        decision(1, yawFreq, decisionCounter, currentVelocity, targetVelocity, B)
 
         if B == [False, False]:
             thrust = thrust1
@@ -102,7 +72,9 @@ def runsimulation():
 
         currentVelocity = currentVelocity + (dt * thrust)  # update rocket's velocity
         dtDisplacement = currentVelocity * dt
+        dtDisplacement2 = np.array(cartesian(dtDisplacement))
         dtDisplacement = np.array(cartesian(dtDisplacement))
+        print(dtDisplacement,dtDisplacement2)
         currentDisplacement = currentDisplacement + dtDisplacement
 
         xVals.append(currentDisplacement[0])
