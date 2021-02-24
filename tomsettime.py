@@ -3,6 +3,7 @@ import numpy as np
 import math
 from random import randint
 
+
 # U = (pitch rate, yaw rate, forward speed)
 
 
@@ -18,9 +19,9 @@ def decision(direction, freq, decisionCounter, currentVelocity, targetVelocity, 
 
 # pitch, yaw and forward displacement in time step dt is converted to cartesian coordinates
 def cartesian(dtDisplacement):
-    x = math.sin(dtDisplacement[0]) * math.cos(dtDisplacement[1]) * dtDisplacement[2]
-    y = math.sin(dtDisplacement[0]) * math.sin(dtDisplacement[1]) * dtDisplacement[2]
-    z = math.cos(dtDisplacement[0]) * dtDisplacement[2]
+    z = math.sqrt(dtDisplacement[2] ** 2 / (math.tan(dtDisplacement[1]) ** 2 + math.tan(dtDisplacement[0]) ** 2 + 1))
+    x = math.tan(dtDisplacement[1]) * z
+    y = math.tan(dtDisplacement[0]) * z
     return x, y, z
 
 
@@ -33,7 +34,7 @@ def runsimulation():
     steps = int(hours / dt)  # how many time steps occur
     targetVelocity = np.array([0, 0])  # desired pitch and yaw rates
     currentVelocity = np.array([0, 0, 0.5])  # * math.pi/10      # current pitch and yaw rates
-    currentDisplacement = [0.00, 0.00, 0]  # initial displacement in cartesian form
+    currentDisplacement = [0, 0, 0]  # initial displacement in cartesian form
     B = [False, False]
     decisionCounter = 0
     time = [0]  # initial time
@@ -46,10 +47,10 @@ def runsimulation():
     decision(0, pitchFreq, decisionCounter, currentVelocity, targetVelocity, B)  # pilots initial decisions
     decision(1, yawFreq, decisionCounter, currentVelocity, targetVelocity, B)
 
-    thrust1 = np.array([randint(1, 10), randint(1, 10), randint(-1, 4)]) / 20  # thrust1 - B(0,0)
-    thrust2 = np.array([randint(1, 10), -randint(1, 10), randint(-1, 4)]) / 20  # thrust2 - B(0,1)
-    thrust3 = np.array([-randint(1, 10), randint(1, 10), randint(-1, 4)]) / 20  # thrust3 - B(1,0)
-    thrust4 = np.array([-randint(1, 10), -randint(1, 10), randint(-1, 4)]) / 20  # thrust4 - B(1,1)
+    thrust1 = np.array([1, 4, -1]) +10 / 20
+    thrust2 = np.array([3, -6, 10])+10  / 20
+    thrust3 = np.array([-2.5, 1, -2.5])+10 / 20
+    thrust4 = np.array([-1, -1.5, -1.5])+10 / 20
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
@@ -73,7 +74,9 @@ def runsimulation():
 
         currentVelocity = currentVelocity + (dt * thrust)  # update rocket's velocity
         dtDisplacement = currentVelocity * dt
+        dtDisplacement2 = np.array(cartesian(dtDisplacement))
         dtDisplacement = np.array(cartesian(dtDisplacement))
+        print(dtDisplacement, dtDisplacement2)
         currentDisplacement = currentDisplacement + dtDisplacement
 
         xVals.append(currentDisplacement[0])
@@ -89,7 +92,7 @@ def runsimulation():
     ax2d[0].legend(("Pitch rate", "Yaw rate", "Forward speed"), loc="upper right")
     ax2d[0].set_title('Velocity')
     ax2d[1].plot(time, displacement)
-    ax2d[1].legend(("Pitch", "Yaw", "Forward displacement"), loc="upper right")
+    ax2d[1].legend(("x", "y", "z"), loc="upper right")
     ax2d[1].set_title('Displacement')
 
     fig2 = plt.figure()
@@ -98,13 +101,14 @@ def runsimulation():
     ax3d.set_xlabel('X axis')
     ax3d.set_ylabel('Z axis')
     ax3d.set_zlabel('Y axis')
-
     with open('SetTimeDataFile.txt', 'a') as f:
-        f.write("\n" + np.array2string(thrust1, formatter={'float_kind':lambda x: "%.2f" % x}))
-        f.write(np.array2string(thrust2, formatter={'float_kind':lambda x: "%.2f" % x}))
-        f.write(np.array2string(thrust3, formatter={'float_kind':lambda x: "%.2f" % x}))
-        f.write(np.array2string(thrust4, formatter={'float_kind':lambda x: "%.2f" % x}))
+        f.write("\n" + np.array2string(thrust1, formatter={'float_kind': lambda x: "%.2f" % x}))
+        f.write(np.array2string(thrust2, formatter={'float_kind': lambda x: "%.2f" % x}))
+        f.write(np.array2string(thrust3, formatter={'float_kind': lambda x: "%.2f" % x}))
+        f.write(np.array2string(thrust4, formatter={'float_kind': lambda x: "%.2f" % x}))
         f.write("\nendpoint = " + str(displacement[-1]) + "\nnumber of each choices were:" + str(timeIn))
+
     plt.show()
 
 
+runsimulation()
