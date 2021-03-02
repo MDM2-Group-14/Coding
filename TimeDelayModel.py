@@ -127,7 +127,7 @@ def runsimulation():
     ax3d.set_xlabel('X axis')
     ax3d.set_ylabel('Z axis')
     ax3d.set_zlabel('Y axis')
-     with open('TimeDelayData.txt', 'a') as f:
+    with open('TimeDelayData.txt', 'a') as f:
         f.write("\n" + np.array2string(thrust1, formatter={'float_kind': lambda x: "%.3f" % x}))
         f.write(np.array2string(thrust2, formatter={'float_kind': lambda x: "%.3f" % x}))
         f.write(np.array2string(thrust3, formatter={'float_kind': lambda x: "%.3f" % x}))
