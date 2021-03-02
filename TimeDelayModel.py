@@ -52,10 +52,10 @@ def runsimulation():
     pitchRateSignChange = False
     yawRateSignChange = False
 
-    thrust1 = np.array([0.001, 0.002, 0.06])
-    thrust2 = np.array([0.0015, -0.006, 0.02])
-    thrust3 = np.array([-0.002, 0.001, -0.03])
-    thrust4 = np.array([-0.002, -0.003, -0.02])
+    thrust1 = np.array([1, 4, -1]) / 20
+    thrust2 = np.array([3, -6, 10]) / 20
+    thrust3 = np.array([-2.5, 1, -2.5]) / 20
+    thrust4 = np.array([-1, -1.5, -1.5]) / 20
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
@@ -127,7 +127,12 @@ def runsimulation():
     ax3d.set_xlabel('X axis')
     ax3d.set_ylabel('Z axis')
     ax3d.set_zlabel('Y axis')
-
+     with open('TimeDelayData.txt', 'a') as f:
+        f.write("\n" + np.array2string(thrust1, formatter={'float_kind': lambda x: "%.3f" % x}))
+        f.write(np.array2string(thrust2, formatter={'float_kind': lambda x: "%.3f" % x}))
+        f.write(np.array2string(thrust3, formatter={'float_kind': lambda x: "%.3f" % x}))
+        f.write(np.array2string(thrust4, formatter={'float_kind': lambda x: "%.3f" % x}))
+        f.write("\nendpoint = " + str(displacement[-1]) + "\nnumber of each choices were:" + str(timeIn))
     plt.show()
 
 runsimulation()
