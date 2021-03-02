@@ -23,32 +23,37 @@ def cartesian(dtDisplacement):
     y = math.tan(dtDisplacement[0])*z
     return x, y, z
 
+
 # program runs for 'hours' number of hours in 'steps' number of steps of size 'dt'
-def runsimulation():
+def runsimulation(yawFreq, pitchFreq, dt):
     hours = 200  # hours until landing
-    dt = 0.1  # time step size (hours)
-    yawFreq = 10  # after yawFreq time steps, change yaw rate
-    pitchFreq = 9  # after pitchFreq time steps, change pitch rate
+    dt = dt  # time step size (hours)
     steps = int(hours / dt)  # how many time steps occur
+
     targetVelocity = np.array([0, 0])  # desired pitch and yaw rates
     currentVelocity = np.array([0, 0, 0.5])  # * math.pi/10      # current pitch and yaw rates
     currentDisplacement = [0, 0, 0]  # initial displacement in cartesian form
+    currentAngle = [0, 0, 0]
+
     B = [False, False]
     decisionCounter = 0
     time = [0]  # initial time
-    timeIn = [0, 0, 0, 0]  # record time in each thruster mode ([(0,0), (0,1), (1,0), (1,1)])
+    timeIn = np.array([0, 0, 0, 0])  # record time in each thruster mode ([(0,0), (0,1), (1,0), (1,1)])
+
     listCurrentVel = [currentVelocity]  # array of velocities
     displacement = [currentDisplacement]  # array of displacements
+    angles = [currentAngle] # array of angles
     xVals = [currentDisplacement[0]]
     yVals = [currentDisplacement[1]]
     zVals = [currentDisplacement[2]]
+
     decision(0, pitchFreq, decisionCounter, currentVelocity, targetVelocity, B)  # pilots initial decisions
     decision(1, yawFreq, decisionCounter, currentVelocity, targetVelocity, B)
 
-    thrust1 = np.array([0.001, 0.002, 0.0006])
-    thrust2 = np.array([0.0015, -0.006, 0.0002])
-    thrust3 = np.array([-0.002, 0.001, -0.0003])
-    thrust4 = np.array([-0.002, -0.003, -0.0002])
+    thrust1 = np.array([0.001, 0.002, 0.06])
+    thrust2 = np.array([0.0015, -0.006, 0.02])
+    thrust3 = np.array([-0.002, 0.001, -0.03])
+    thrust4 = np.array([-0.002, -0.003, -0.02])
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
@@ -71,10 +76,9 @@ def runsimulation():
             timeIn[3] += 1
 
         currentVelocity = currentVelocity + (dt * thrust)  # update rocket's velocity
-        dtDisplacement = currentVelocity * dt
-        dtDisplacement2 = np.array(cartesian(dtDisplacement))
-        dtDisplacement = np.array(cartesian(dtDisplacement))
-        print(dtDisplacement,dtDisplacement2)
+        dtAngle = currentVelocity * dt
+        currentAngle = currentAngle + dtAngle
+        dtDisplacement = np.array(cartesian(dtAngle))
         currentDisplacement = currentDisplacement + dtDisplacement
 
         xVals.append(currentDisplacement[0])
@@ -82,24 +86,7 @@ def runsimulation():
         zVals.append(currentDisplacement[2])
 
         displacement.append(currentDisplacement)
+        angles.append(currentAngle)
         listCurrentVel.append(currentVelocity)
+    return(displacement, angles, listCurrentVel, time, timeIn, xVals, yVals, zVals)
 
-    print(timeIn)
-    fig1, ax2d = plt.subplots(1, 2)
-    ax2d[0].plot(time, listCurrentVel)
-    ax2d[0].legend(("Pitch rate", "Yaw rate", "Forward speed"), loc="upper right")
-    ax2d[0].set_title('Velocity')
-    ax2d[1].plot(time, displacement)
-    ax2d[1].legend(("x", "y", "z"), loc="upper right")
-    ax2d[1].set_title('Displacement')
-
-    fig2 = plt.figure()
-    ax3d = plt.axes(projection="3d")
-    ax3d.plot3D(xVals, zVals, yVals)
-    ax3d.set_xlabel('X axis')
-    ax3d.set_ylabel('Z axis')
-    ax3d.set_zlabel('Y axis')
-
-    plt.show()
-
-runsimulation()

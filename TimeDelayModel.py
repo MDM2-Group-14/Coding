@@ -24,18 +24,22 @@ def cartesian(dtDisplacement):
 
 
 # program runs for 'hours' number of hours in 'steps' number of steps of size 'dt'
-def runsimulation():
+def runsimulation(pitchDelay, yawDelay, dt):
     hours = 200  # hours until landing
-    dt = 0.1  # time step size (hours)
+    dt = dt  # time step size (hours)
     steps = int(hours / dt)  # how many time steps occur
     targetVelocity = np.array([0, 0])  # desired pitch and yaw rates
     currentVelocity = np.array([0, 0, 0.5])  # * math.pi/10      # current pitch and yaw rates
     currentDisplacement = [0, 0, 0]  # initial displacement in cartesian form
+    currentAngle = [0, 0, 0]    # initial angle of the ship - equivalent to displacement in polar coordinates
     B = [False, False]
     time = [0]  # initial time
-    timeIn = [0, 0, 0, 0]  # record time in each thruster mode ([(0,0), (0,1), (1,0), (1,1)])
+    timeIn = np.array([0, 0, 0, 0])  # record time in each thruster mode ([(0,0), (0,1), (1,0), (1,1)])
     listCurrentVel = [currentVelocity]  # array of velocities
+
     displacement = [currentDisplacement]  # array of displacements
+    angles = [currentAngle]     # array of angles
+
     xVals = [currentDisplacement[0]]
     yVals = [currentDisplacement[1]]
     zVals = [currentDisplacement[2]]
@@ -45,17 +49,17 @@ def runsimulation():
     # in order to allow pilots to make a decision a certain time after the pitch or yaw rates go above/below the target
     # values, need to have their individual time delays, keep track of when the target value is crossed (change of sign
     # in the subtraction) as well as establish a counter to keep track of delay
-    timeDelay = [10, 10]
+    timeDelay = [pitchDelay, yawDelay]
     pitchRateSign = np.sign(targetVelocity[0] - currentVelocity[0])
     yawRateSign = np.sign(targetVelocity[1] - currentVelocity[1])
     overshoot = [0, 0]
     pitchRateSignChange = False
     yawRateSignChange = False
 
-    thrust1 = np.array([1, 4, -1]) / 20
-    thrust2 = np.array([3, -6, 10]) / 20
-    thrust3 = np.array([-2.5, 1, -2.5]) / 20
-    thrust4 = np.array([-1, -1.5, -1.5]) / 20
+    thrust1 = np.array([0.001, 0.002, 0.06])
+    thrust2 = np.array([0.0015, -0.006, 0.02])
+    thrust3 = np.array([-0.002, 0.001, -0.03])
+    thrust4 = np.array([-0.002, -0.003, -0.02])
 
     for t in np.linspace(dt, hours, steps):
         time.append(t)
@@ -101,8 +105,9 @@ def runsimulation():
             timeIn[3] += 1
 
         currentVelocity = currentVelocity + (dt * thrust)  # update rocket's velocity
-        dtDisplacement = currentVelocity * dt
-        dtDisplacement = np.array(cartesian(dtDisplacement))
+        dtAngle = currentVelocity * dt
+        currentAngle = currentAngle + dtAngle
+        dtDisplacement = np.array(cartesian(dtAngle))
         currentDisplacement = currentDisplacement + dtDisplacement
 
         xVals.append(currentDisplacement[0])
@@ -110,29 +115,8 @@ def runsimulation():
         zVals.append(currentDisplacement[2])
 
         displacement.append(currentDisplacement)
+        angles.append(currentAngle)
         listCurrentVel.append(currentVelocity)
 
-    print(timeIn)
-    fig1, ax2d = plt.subplots(1, 2)
-    ax2d[0].plot(time, listCurrentVel)
-    ax2d[0].legend(("Pitch rate", "Yaw rate", "Forward speed"), loc="upper right")
-    ax2d[0].set_title('Velocity')
-    ax2d[1].plot(time, displacement)
-    ax2d[1].legend(("x", "y", "z"), loc="upper right")
-    ax2d[1].set_title('Displacement')
+    return (displacement, angles, listCurrentVel, time, timeIn, xVals, yVals, zVals)
 
-    fig2 = plt.figure()
-    ax3d = plt.axes(projection="3d")
-    ax3d.plot3D(xVals, zVals, yVals)
-    ax3d.set_xlabel('X axis')
-    ax3d.set_ylabel('Z axis')
-    ax3d.set_zlabel('Y axis')
-    with open('TimeDelayData.txt', 'a') as f:
-        f.write("\n" + np.array2string(thrust1, formatter={'float_kind': lambda x: "%.3f" % x}))
-        f.write(np.array2string(thrust2, formatter={'float_kind': lambda x: "%.3f" % x}))
-        f.write(np.array2string(thrust3, formatter={'float_kind': lambda x: "%.3f" % x}))
-        f.write(np.array2string(thrust4, formatter={'float_kind': lambda x: "%.3f" % x}))
-        f.write("\nendpoint = " + str(displacement[-1]) + "\nnumber of each choices were:" + str(timeIn))
-    plt.show()
-
-runsimulation()
